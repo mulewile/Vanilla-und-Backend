@@ -8,12 +8,9 @@ const app = express();
 const port = 3000;
 
 const connection = mysql.createPool({
-  host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
   database: process.env.DB_DATABASE,
-  connectTimeout: 15000,
 });
 
 connection.getConnection((err) => {
@@ -29,17 +26,20 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.post("/color", (req, res) => {
-  const { color } = req.body;
+  const { colorObject } = req.body;
+  const { color, colorMeaning } = colorObject;
 
-  const sql = "INSERT INTO backgroundcolor (color) VALUES (?)";
-  connection.query(sql, [color], (err, result) => {
+  const sql = "INSERT INTO backgroundcolor (color, colormeaning) VALUES (?, ?)";
+  connection.query(sql, [color, colorMeaning], (err, result) => {
     if (err) {
       console.error("Error executing MySQL query:", err);
       res.status(500).send("Internal Server Error");
       return;
     }
-    console.log(`"${color}" color has been inserted into myDB database.`);
-    res.status(200).send("Color saved successfully");
+    console.log(
+      `"${color}" color and ${colorMeaning} meaning have been inserted into myDB database.`
+    );
+    res.status(200).send("Color and meaning saved successfully");
   });
 });
 
@@ -54,12 +54,14 @@ app.get("/color", (req, res) => {
 
     if (result.length > 0) {
       const color = result[0].color;
-      res.status(200).json({ color });
+      const colorMeaning = result[0].color_meaning;
+      res.status(200).json({ color, colorMeaning });
     } else {
       res.status(404).send("Color not found");
     }
   });
 });
+
 app.get("/", (req, res) => {
   res.send("Welcome to the Color API!");
 });

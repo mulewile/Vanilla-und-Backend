@@ -14,11 +14,14 @@ function handleColorChange(colorName) {
 
 async function handleColorSubmit(event) {
   event.preventDefault();
-  const backgroundColor = event.target.color.value;
+  const formData = new FormData(event.target);
+  const colorObject = Object.fromEntries(formData);
+  const { color, colorMeaning } = colorObject;
 
   const moodText = `
-  Heute fühle ich mich "${backgroundColor}!". 
-  Also ich bin "${backgroundColor}". 
+  COLOUR MEANING: ${colorMeaning}.
+  Heute fühle ich mich "${color}!". 
+  Also ich bin "${color}". 
   Mal sehen, was ich morgen sein werde!`;
   moodElement.textContent = moodText;
 
@@ -27,15 +30,17 @@ async function handleColorSubmit(event) {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ color: backgroundColor }),
+    body: JSON.stringify({
+      colorObject,
+    }),
   });
 
   if (response.ok) {
-    console.log(`"${backgroundColor}" color has been saved successfully`);
+    console.log(`"${color}" color has been saved successfully`);
   }
   if (
     (error) => {
-      console.error(`"Error saving "${backgroundColor}" color:`, error);
+      console.error(`"Error saving "${color}" color:`, error);
     }
   );
 }
@@ -53,6 +58,7 @@ async function handleOnPageLoad() {
   }
 
   bodyElement.style.backgroundColor = data.color;
+  console.log(data);
 }
 
 formElement.addEventListener("submit", handleColorSubmit);
