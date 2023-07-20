@@ -44,21 +44,22 @@ app.post("/color", (req, res) => {
 });
 
 app.get("/color", (req, res) => {
-  const sql = "SELECT color FROM backgroundcolor ORDER BY id DESC LIMIT 1";
+  const sql = "SELECT * FROM backgroundcolor ORDER BY id DESC LIMIT 1";
   connection.query(sql, (err, result) => {
     if (err) {
       console.error("Error executing MySQL query:", err);
       res.status(500).send("Internal Server Error");
       return;
     }
-
+    console.log("These are the results", result);
     if (result.length > 0) {
       const color = result[0].color;
-      const colorMeaning = result[0].color_meaning;
+      const colorMeaning = result[0].colormeaning;
       res.status(200).json({ color, colorMeaning });
     } else {
       res.status(404).send("Color not found");
     }
+    connection.release();
   });
 });
 

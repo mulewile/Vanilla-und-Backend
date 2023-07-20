@@ -6,6 +6,7 @@ const bodyElement = getElement('[data-js="body"]');
 const formElement = getElement('[data-js="form"]');
 const colorInputElement = getElement('[data-js="colorInput"]');
 const moodElement = getElement('[data-js="mood"]');
+const meaningElement = document.querySelector('[data-js="meaning"]');
 const footerElement = getElement('[data-js="footer"]');
 
 function handleColorChange(colorName) {
@@ -21,8 +22,7 @@ async function handleColorSubmit(event) {
   const moodText = `
   COLOUR MEANING: ${colorMeaning}.
   Heute fühle ich mich "${color}!". 
-  Also ich bin "${color}". 
-  Mal sehen, was ich morgen sein werde!`;
+  `;
   moodElement.textContent = moodText;
 
   const response = await fetch("http://localhost:3000/color", {
@@ -50,15 +50,23 @@ async function handleOnPageLoad() {
   const year = currentDate.getFullYear();
   footerElement.textContent = `Bill ${year}`;
 
-  const response = await fetch("http://localhost:3000/color");
-  const data = await response.json();
+  const COLOR_URL = "http://localhost:3000/color";
+  const response = await fetch(COLOR_URL);
   if (!response.ok) {
-    alert(`"Error reading "${data.color}" color from the server"`);
+    alert(`Error reading color from the server`);
+    return;
+  }
+  const colorData = await response.json();
+  const { color, colorMeaning } = colorData;
+
+  if (!response.ok) {
+    alert(`"Error reading "${color}" color from the server"`);
     return;
   }
 
-  bodyElement.style.backgroundColor = data.color;
-  console.log(data);
+  bodyElement.style.backgroundColor = color;
+  moodElement.textContent = `My color is ${color}`;
+  meaningElement.textContent = `The colour ${color} is associated with ${colorMeaning}`;
 }
 
 formElement.addEventListener("submit", handleColorSubmit);
