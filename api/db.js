@@ -13,61 +13,82 @@ const connection = mysql.createPool({
   database: process.env.DB_DATABASE,
 });
 
-connection.getConnection((err) => {
+connection.connect((err) => {
   if (err) {
-    console.error("Error connecting to MySQL database:", err);
-    return;
+    console.error("Error connecting to MySQL:", err);
+  } else {
+    console.log("Connected to MySQL database");
   }
-  console.log("Connected to MySQL database");
 });
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.post("/color", (req, res) => {
-  const { colorObject } = req.body;
-  const { color, colorMeaning } = colorObject;
+app.post("/color", async (req, res) => {
+  try {
+    const { colorObject } = req.body;
 
-  const sql = "INSERT INTO backgroundcolor (color, colormeaning) VALUES (?, ?)";
-  connection.query(sql, [color, colorMeaning], (err, result) => {
-    if (err) {
-      console.error("Error executing MySQL query:", err);
-      res.status(500).send("Internal Server Error");
-      return;
+    if (!colorObject || !colorObject.color || !colorObject.colorMeaning) {
+      return res
+        .status(400)
+        .send(
+          "Invalid input: colorObject is required with color and colorMeaning."
+        );
     }
+
+    const { color, colorMeaning } = colorObject;
+
+    const sql =
+      "INSERT INTO backgroundcolor (color, color_meaning) VALUES (?, ?)";
+    await queryAsync(sql, [color, colorMeaning]);
+
     console.log(
       `"${color}" color and ${colorMeaning} meaning have been inserted into myDB database.`
     );
-    res.status(200).send("Color and meaning saved successfully");
-  });
+    return res.status(200).send("Color and meaning saved successfully");
+  } catch (err) {
+    console.error("Error executing MySQL query:", err.message);
+    return res.status(500).send(`Internal Server Error: ${err.message}`);
+  }
 });
 
-app.get("/color", (req, res) => {
-  const sql = "SELECT * FROM backgroundcolor ORDER BY id DESC LIMIT 1";
-  connection.query(sql, (err, result) => {
-    if (err) {
-      console.error("Error executing MySQL query:", err);
-      res.status(500).send("Internal Server Error");
-      return;
-    }
-    console.log("These are the results", result);
+function queryAsync(sql, values) {
+  return new Promise((resolve, reject) => {
+    connection.query(sql, values, (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+}
+
+app.get("/color", async (req, res) => {
+  try {
+    const sql = "SELECT * FROM backgroundcolor ORDER BY id DESC LIMIT 1";
+    const result = await queryAsync(sql);
+
     if (result.length > 0) {
       const color = result[0].color;
       const colorMeaning = result[0].colormeaning;
-      res.status(200).json({ color, colorMeaning });
+      return res.status(200).json({ color, colorMeaning });
     } else {
-      res.status(404).send("Color not found");
+      return res.status(404).send("Color not found");
     }
-    connection.release();
-  });
+  } catch (err) {
+    console.error("Error executing MySQL query:", err.message);
+    return res.status(500).send("Internal Server Error");
+  }
 });
 
 app.get("/", (req, res) => {
-  res.send("Welcome to the Color API!");
+  return res.send("Welcome to the Color API!");
 });
+
 app.get("/:universalURL", (req, res) => {
-  res.send("404 URL NOT FOUND");
+  return res.status(404).send("404 URL NOT FOUND");
 });
 
 app.listen(port, () => {
